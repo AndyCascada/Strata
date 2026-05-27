@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { runDailyAnalysis } from "../lib/analyze";
 
 const date = process.argv[2] ?? yesterday();

@@ -1,7 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ContextLayer } from "@strata/shared";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getClient() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
 
 const DEVIATION_LEVELS = ["Within Norms", "Unusual", "Historical Outlier", "Unprecedented"] as const;
 
@@ -12,7 +14,7 @@ interface AnalysisResult {
 }
 
 export async function analyzeHeadline(headline: string): Promise<AnalysisResult> {
-  const message = await client.messages.create({
+  const message = await getClient().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1024,
     system: `You are a rigorous historian and social scientist. You analyze news headlines and provide honest, evidence-based context across three dimensions. You are not partisan — your job is to compare events against historical precedent, not to editorialize politically. You always respond with valid JSON.`,
