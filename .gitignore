@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+*.tsbuildinfo
+
+# databases
+*.db
+*.db-shm
+*.db-wal
+
+# env files
+.env
+.env.local
+.env*.local
