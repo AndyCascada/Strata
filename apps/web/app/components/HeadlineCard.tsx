@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnalyzedHeadline, ContextLayer, DeviationLevel } from "@strata/shared";
-import { deviationColor } from "@strata/shared";
+import { deviationColor, DEVIATION_ORDER } from "@strata/shared";
 
 interface Props {
   headline: AnalyzedHeadline;
@@ -21,8 +21,6 @@ export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
     { key: "broadHistory" as const, label: LAYER_LABELS.broadHistory, data: headline.broadHistory },
     { key: "humanNature" as const, label: LAYER_LABELS.humanNature, data: headline.humanNature },
   ];
-
-  const highestScore = getHighestDeviation(layers.map((l) => l.data.score));
 
   return (
     <article className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
@@ -98,9 +96,3 @@ function ContextSection({ label, layer }: { label: string; layer: ContextLayer }
   );
 }
 
-function getHighestDeviation(scores: DeviationLevel[]): DeviationLevel {
-  const order: DeviationLevel[] = ["Within Norms", "Unusual", "Historical Outlier", "Unprecedented"];
-  return scores.reduce((max, s) =>
-    order.indexOf(s) > order.indexOf(max) ? s : max
-  );
-}

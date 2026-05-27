@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to DigitalOcean
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH into droplet and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_SSH_HOST }}
+          username: ${{ secrets.DO_SSH_USER }}
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/strata
+
+            echo "Pulling latest code..."
+            git pull origin main
+
+            echo "Installing dependencies..."
+            npm install --workspace=apps/web --workspace=packages/shared
+
+            echo "Generating Prisma client..."
+            cd apps/web && npx prisma generate && cd ../..
+
+            echo "Applying database migrations..."
+            cd apps/web && npx prisma migrate deploy && cd ../..
+
+            echo "Building web app..."
+            npm run build --workspace=apps/web
+
+            echo "Reloading app..."
+            pm2 reload strata --update-env
+
+            echo "Deploy complete."

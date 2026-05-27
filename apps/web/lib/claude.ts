@@ -1,16 +1,33 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ContextLayer } from "@strata/shared";
 
-function getClient() {
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return _client;
 }
 
-const DEVIATION_LEVELS = ["Within Norms", "Unusual", "Historical Outlier", "Unprecedented"] as const;
+export const DEVIATION_LEVELS = ["Within Norms", "Unusual", "Historical Outlier", "Unprecedented"] as const;
 
-interface AnalysisResult {
+export interface AnalysisResult {
   recentHistory: ContextLayer;
   broadHistory: ContextLayer;
   humanNature: ContextLayer;
+}
+
+export function parseAnalysisResponse(text: string): AnalysisResult {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("No JSON found in Claude response");
+
+  const result = JSON.parse(jsonMatch[0]) as AnalysisResult;
+
+  for (const layer of [result.recentHistory, result.broadHistory, result.humanNature]) {
+    if (!DEVIATION_LEVELS.includes(layer.score as never)) {
+      throw new Error(`Invalid deviation level: ${layer.score}`);
+    }
+  }
+
+  return result;
 }
 
 export async function analyzeHeadline(headline: string): Promise<AnalysisResult> {
@@ -23,7 +40,7 @@ export async function analyzeHeadline(headline: string): Promise<AnalysisResult>
         role: "user",
         content: `Analyze this news headline across three dimensions and return a JSON object:
 
-Headline: "${headline}"
+Headline: "${headline.replace(/"/g, '\\"')}"
 
 Return this exact JSON structure:
 {
@@ -56,17 +73,5 @@ Be honest and specific. Cite actual examples where possible.`,
   });
 
   const text = message.content[0].type === "text" ? message.content[0].text : "";
-
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("No JSON found in Claude response");
-
-  const result = JSON.parse(jsonMatch[0]) as AnalysisResult;
-
-  for (const layer of [result.recentHistory, result.broadHistory, result.humanNature]) {
-    if (!DEVIATION_LEVELS.includes(layer.score as never)) {
-      throw new Error(`Invalid deviation level: ${layer.score}`);
-    }
-  }
-
-  return result;
+  return parseAnalysisResponse(text);
 }

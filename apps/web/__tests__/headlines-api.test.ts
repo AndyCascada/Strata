@@ -34,11 +34,13 @@ const SAMPLE_ROW = {
   forDate: "2026-05-26",
 };
 
-function makeRequest(date?: string) {
+import { NextRequest } from "next/server";
+
+function makeRequest(date?: string): NextRequest {
   const url = date
     ? `http://localhost/api/headlines?date=${date}`
     : "http://localhost/api/headlines";
-  return new Request(url);
+  return new NextRequest(url);
 }
 
 describe("GET /api/headlines", () => {

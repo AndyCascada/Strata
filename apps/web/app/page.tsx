@@ -1,20 +1,26 @@
 import { HeadlineList } from "./components/HeadlineList";
-import type { AnalyzedHeadline } from "@strata/shared";
+import { prisma } from "@/lib/prisma";
+import { yesterday } from "@/lib/dates";
+import type { AnalyzedHeadline, DeviationLevel } from "@strata/shared";
 
 async function getHeadlines(date: string): Promise<AnalyzedHeadline[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/headlines?date=${date}`, {
-    cache: "no-store",
+  const rows = await prisma.headline.findMany({
+    where: { forDate: date },
+    orderBy: { analyzedAt: "asc" },
   });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.headlines ?? [];
-}
 
-function yesterday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
+  return rows.map((r) => ({
+    id: r.id,
+    headline: r.headline,
+    source: r.source,
+    url: r.url,
+    publishedAt: r.publishedAt,
+    category: r.category,
+    recentHistory: { score: r.recentScore as DeviationLevel, summary: r.recentSummary, detail: r.recentDetail },
+    broadHistory: { score: r.broadScore as DeviationLevel, summary: r.broadSummary, detail: r.broadDetail },
+    humanNature: { score: r.humanScore as DeviationLevel, summary: r.humanSummary, detail: r.humanDetail },
+    analyzedAt: r.analyzedAt.toISOString(),
+  }));
 }
 
 export default async function Home() {
