@@ -29,6 +29,15 @@ export async function runDailyAnalysis(date: string): Promise<number> {
           humanScore: analysis.humanNature.score,
           humanSummary: analysis.humanNature.summary,
           humanDetail: analysis.humanNature.detail,
+          isPolitical: analysis.isPolitical,
+          politicianName: analysis.politicianName,
+          partyName: analysis.partyName,
+          campaignScore: analysis.campaignRhetoric?.score ?? null,
+          campaignSummary: analysis.campaignRhetoric?.summary ?? null,
+          campaignDetail: analysis.campaignRhetoric?.detail ?? null,
+          partyScore: analysis.partyValues?.score ?? null,
+          partySummary: analysis.partyValues?.summary ?? null,
+          partyDetail: analysis.partyValues?.detail ?? null,
         },
       });
 

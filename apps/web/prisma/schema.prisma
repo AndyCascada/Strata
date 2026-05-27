@@ -27,6 +27,18 @@ model Headline {
   humanSummary   String
   humanDetail    String
 
+  isPolitical        Boolean @default(false)
+  politicianName     String?
+  partyName          String?
+
+  campaignScore    String?
+  campaignSummary  String?
+  campaignDetail   String?
+
+  partyScore    String?
+  partySummary  String?
+  partyDetail   String?
+
   analyzedAt   DateTime @default(now())
   forDate      String
 

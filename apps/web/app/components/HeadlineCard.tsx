@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnalyzedHeadline, ContextLayer, DeviationLevel } from "@strata/shared";
-import { deviationColor, DEVIATION_ORDER } from "@strata/shared";
+import { deviationColor } from "@strata/shared";
 
 interface Props {
   headline: AnalyzedHeadline;
@@ -9,18 +9,21 @@ interface Props {
   onToggle: () => void;
 }
 
-const LAYER_LABELS = {
-  recentHistory: "Recent History",
-  broadHistory: "Broad History",
-  humanNature: "Human Nature",
-} as const;
-
 export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
-  const layers = [
-    { key: "recentHistory" as const, label: LAYER_LABELS.recentHistory, data: headline.recentHistory },
-    { key: "broadHistory" as const, label: LAYER_LABELS.broadHistory, data: headline.broadHistory },
-    { key: "humanNature" as const, label: LAYER_LABELS.humanNature, data: headline.humanNature },
+  const standardLayers = [
+    { key: "recentHistory", label: "Recent History", data: headline.recentHistory },
+    { key: "broadHistory",  label: "Broad History",  data: headline.broadHistory },
+    { key: "humanNature",   label: "Human Nature",   data: headline.humanNature },
   ];
+
+  const politicalLayers = headline.isPolitical && headline.campaignRhetoric && headline.partyValues
+    ? [
+        { key: "campaignRhetoric", label: "Campaign Rhetoric", data: headline.campaignRhetoric },
+        { key: "partyValues",      label: "Party Values",      data: headline.partyValues },
+      ]
+    : [];
+
+  const allBadgeLayers = [...standardLayers, ...politicalLayers];
 
   return (
     <article className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
@@ -34,7 +37,7 @@ export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
             {headline.headline}
           </h2>
           <div className="flex gap-2 mt-3 flex-wrap">
-            {layers.map((l) => (
+            {allBadgeLayers.map((l) => (
               <DeviationBadge key={l.key} label={l.label} score={l.data.score} />
             ))}
           </div>
@@ -44,9 +47,29 @@ export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
 
       {isExpanded && (
         <div className="border-t border-zinc-800 divide-y divide-zinc-800">
-          {layers.map((l) => (
+          {standardLayers.map((l) => (
             <ContextSection key={l.key} label={l.label} layer={l.data} />
           ))}
+
+          {politicalLayers.length > 0 && (
+            <>
+              <div className="px-5 pt-4 pb-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-blue-400">
+                  Political Context
+                  {headline.politicianName && (
+                    <span className="ml-2 normal-case text-zinc-400 font-normal">
+                      · {headline.politicianName}
+                      {headline.partyName && ` (${headline.partyName})`}
+                    </span>
+                  )}
+                </p>
+              </div>
+              {politicalLayers.map((l) => (
+                <ContextSection key={l.key} label={l.label} layer={l.data} />
+              ))}
+            </>
+          )}
+
           <div className="px-5 py-3">
             <a
               href={headline.url}
@@ -95,4 +118,3 @@ function ContextSection({ label, layer }: { label: string; layer: ContextLayer }
     </div>
   );
 }
-

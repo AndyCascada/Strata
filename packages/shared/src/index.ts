@@ -13,9 +13,14 @@ export interface AnalyzedHeadline {
   url: string;
   publishedAt: string;
   category: string;
-  recentHistory: ContextLayer;    // Layer 1: recent historical context
-  broadHistory: ContextLayer;     // Layer 2: broader historical context
-  humanNature: ContextLayer;      // Layer 3: human nature context
+  recentHistory: ContextLayer;
+  broadHistory: ContextLayer;
+  humanNature: ContextLayer;
+  isPolitical: boolean;
+  politicianName: string | null;
+  partyName: string | null;
+  campaignRhetoric: ContextLayer | null;
+  partyValues: ContextLayer | null;
   analyzedAt: string;
 }
 

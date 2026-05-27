@@ -26,6 +26,11 @@ export async function GET(req: NextRequest) {
     recentHistory: { score: r.recentScore as DeviationLevel, summary: r.recentSummary, detail: r.recentDetail },
     broadHistory: { score: r.broadScore as DeviationLevel, summary: r.broadSummary, detail: r.broadDetail },
     humanNature: { score: r.humanScore as DeviationLevel, summary: r.humanSummary, detail: r.humanDetail },
+    isPolitical: r.isPolitical,
+    politicianName: r.politicianName,
+    partyName: r.partyName,
+    campaignRhetoric: r.campaignScore ? { score: r.campaignScore as DeviationLevel, summary: r.campaignSummary!, detail: r.campaignDetail! } : null,
+    partyValues: r.partyScore ? { score: r.partyScore as DeviationLevel, summary: r.partySummary!, detail: r.partyDetail! } : null,
     analyzedAt: r.analyzedAt.toISOString(),
   }));
 

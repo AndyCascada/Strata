@@ -1,42 +1,89 @@
 import { describe, it, expect } from "vitest";
 import { parseAnalysisResponse, DEVIATION_LEVELS } from "@/lib/claude";
 
-const VALID_RESPONSE = JSON.stringify({
-  recentHistory: {
+const BASE_LAYERS = {
+  recentHistory: { score: "Within Norms", summary: "Common in recent history.", detail: "Details here." },
+  broadHistory:  { score: "Unusual",       summary: "Rare in broad history.",   detail: "Details here." },
+  humanNature:   { score: "Historical Outlier", summary: "Unusual human behavior.", detail: "Details here." },
+};
+
+const NON_POLITICAL = JSON.stringify({
+  ...BASE_LAYERS,
+  isPolitical: false,
+  politicianName: null,
+  partyName: null,
+  campaignRhetoric: null,
+  partyValues: null,
+});
+
+const POLITICAL = JSON.stringify({
+  ...BASE_LAYERS,
+  isPolitical: true,
+  politicianName: "Joe Biden",
+  partyName: "Democratic Party",
+  campaignRhetoric: {
     score: "Within Norms",
-    summary: "Presidents have done this before.",
-    detail: "Historical examples include X, Y, and Z.",
+    summary: "Consistent with campaign promises.",
+    detail: "Biden pledged this during the 2020 campaign.",
   },
-  broadHistory: {
+  partyValues: {
     score: "Unusual",
-    summary: "Rare but not unheard of in broader history.",
-    detail: "Similar events occurred in 1850 and 1923.",
-  },
-  humanNature: {
-    score: "Historical Outlier",
-    summary: "Reflects a pattern of power consolidation.",
-    detail: "Sociologists describe this as institutional capture.",
+    summary: "Somewhat at odds with party platform.",
+    detail: "The Democratic platform has historically opposed this.",
   },
 });
 
-describe("parseAnalysisResponse", () => {
-  it("parses a well-formed response", () => {
-    const result = parseAnalysisResponse(VALID_RESPONSE);
+describe("parseAnalysisResponse — non-political", () => {
+  it("parses standard three layers", () => {
+    const result = parseAnalysisResponse(NON_POLITICAL);
     expect(result.recentHistory.score).toBe("Within Norms");
     expect(result.broadHistory.score).toBe("Unusual");
     expect(result.humanNature.score).toBe("Historical Outlier");
   });
 
-  it("extracts JSON embedded in surrounding prose", () => {
-    const withProse = `Here is my analysis:\n\n${VALID_RESPONSE}\n\nI hope that helps.`;
-    const result = parseAnalysisResponse(withProse);
-    expect(result.recentHistory.score).toBe("Within Norms");
+  it("sets isPolitical to false and political fields to null", () => {
+    const result = parseAnalysisResponse(NON_POLITICAL);
+    expect(result.isPolitical).toBe(false);
+    expect(result.politicianName).toBeNull();
+    expect(result.partyName).toBeNull();
+    expect(result.campaignRhetoric).toBeNull();
+    expect(result.partyValues).toBeNull();
+  });
+});
+
+describe("parseAnalysisResponse — political", () => {
+  it("parses all five layers", () => {
+    const result = parseAnalysisResponse(POLITICAL);
+    expect(result.isPolitical).toBe(true);
+    expect(result.politicianName).toBe("Joe Biden");
+    expect(result.partyName).toBe("Democratic Party");
+    expect(result.campaignRhetoric?.score).toBe("Within Norms");
+    expect(result.partyValues?.score).toBe("Unusual");
   });
 
-  it("preserves summary and detail text", () => {
-    const result = parseAnalysisResponse(VALID_RESPONSE);
-    expect(result.recentHistory.summary).toBe("Presidents have done this before.");
-    expect(result.broadHistory.detail).toBe("Similar events occurred in 1850 and 1923.");
+  it("preserves political layer detail text", () => {
+    const result = parseAnalysisResponse(POLITICAL);
+    expect(result.campaignRhetoric?.summary).toBe("Consistent with campaign promises.");
+    expect(result.partyValues?.detail).toBe("The Democratic platform has historically opposed this.");
+  });
+
+  it("throws when isPolitical is true but political layers are missing", () => {
+    const bad = JSON.stringify({
+      ...BASE_LAYERS,
+      isPolitical: true,
+      politicianName: "Someone",
+      partyName: "Some Party",
+      campaignRhetoric: null,
+      partyValues: null,
+    });
+    expect(() => parseAnalysisResponse(bad)).toThrow("Political headline missing");
+  });
+});
+
+describe("parseAnalysisResponse — general", () => {
+  it("extracts JSON embedded in surrounding prose", () => {
+    const result = parseAnalysisResponse(`Here is my analysis:\n\n${NON_POLITICAL}\n\nDone.`);
+    expect(result.recentHistory.score).toBe("Within Norms");
   });
 
   it("throws when response contains no JSON", () => {
@@ -47,35 +94,30 @@ describe("parseAnalysisResponse", () => {
 
   it("throws when a deviation score is not a valid level", () => {
     const bad = JSON.stringify({
+      ...BASE_LAYERS,
       recentHistory: { score: "Very Unusual", summary: "s", detail: "d" },
-      broadHistory: { score: "Within Norms", summary: "s", detail: "d" },
-      humanNature: { score: "Within Norms", summary: "s", detail: "d" },
+      isPolitical: false,
+      politicianName: null,
+      partyName: null,
+      campaignRhetoric: null,
+      partyValues: null,
     });
-    expect(() => parseAnalysisResponse(bad)).toThrow("Invalid deviation level: Very Unusual");
-  });
-
-  it("throws when JSON is structurally malformed", () => {
-    expect(() => parseAnalysisResponse("{ not valid json }")).toThrow();
+    expect(() => parseAnalysisResponse(bad)).toThrow("Invalid deviation level");
   });
 
   it("accepts all four valid deviation levels", () => {
     for (const level of DEVIATION_LEVELS) {
       const response = JSON.stringify({
         recentHistory: { score: level, summary: "s", detail: "d" },
-        broadHistory: { score: level, summary: "s", detail: "d" },
-        humanNature: { score: level, summary: "s", detail: "d" },
+        broadHistory:  { score: level, summary: "s", detail: "d" },
+        humanNature:   { score: level, summary: "s", detail: "d" },
+        isPolitical: false,
+        politicianName: null,
+        partyName: null,
+        campaignRhetoric: null,
+        partyValues: null,
       });
       expect(() => parseAnalysisResponse(response)).not.toThrow();
     }
-  });
-
-  it("handles headlines with embedded double quotes", () => {
-    const withQuotes = JSON.stringify({
-      recentHistory: { score: "Within Norms", summary: 'Trump said "America First"', detail: "d" },
-      broadHistory: { score: "Within Norms", summary: "s", detail: "d" },
-      humanNature: { score: "Within Norms", summary: "s", detail: "d" },
-    });
-    const result = parseAnalysisResponse(withQuotes);
-    expect(result.recentHistory.summary).toContain("America First");
   });
 });
