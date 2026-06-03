@@ -1,14 +1,9 @@
 name: Deploy
 
 on:
-  # NOTE: Auto-deploy on push is disabled until the DigitalOcean droplet is
-  # provisioned. Every push since setup has failed at the SSH step (no server
-  # to connect to). Re-enable the `push` trigger below once the droplet +
-  # DO_SSH_* secrets are live. Until then, deploy can be run manually.
-  #
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -27,8 +22,9 @@ jobs:
             set -e
             cd /opt/strata
 
-            echo "Pulling latest code..."
-            git pull origin main
+            echo "Syncing to origin/main (hard reset — server mirrors git)..."
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "Installing dependencies..."
             npm install --workspace=apps/web --workspace=packages/shared

@@ -1,13 +1,8 @@
 name: Daily Analysis
 
 on:
-  # NOTE: The nightly schedule is disabled until the DigitalOcean droplet is
-  # provisioned. While it was enabled, every run failed at the SSH step (no
-  # server to connect to) and emailed a failure notice daily. Re-enable the
-  # `schedule` block below once the droplet + DO_SSH_* secrets are live.
-  #
-  # schedule:
-  #   - cron: "0 6 * * *"  # 2am ET (UTC-4 summer) / 1am ET (UTC-5 winter)
+  schedule:
+    - cron: "0 6 * * *"  # 2am ET (UTC-4 summer) / 1am ET (UTC-5 winter)
   workflow_dispatch:      # allow manual trigger from GitHub UI
     inputs:
       date:
