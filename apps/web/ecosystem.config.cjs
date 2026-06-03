@@ -2,7 +2,9 @@ module.exports = {
   apps: [
     {
       name: "strata",
-      script: "node_modules/.bin/next",
+      // `next` is hoisted to the workspace root node_modules by npm, not the
+      // app's local node_modules, so point PM2 at the hoisted binary.
+      script: "/opt/strata/node_modules/.bin/next",
       args: "start",
       cwd: "/opt/strata/apps/web",
       instances: 1,
