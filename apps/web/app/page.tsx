@@ -4,6 +4,11 @@ import { yesterday } from "@/lib/dates";
 import { mapRowToHeadline } from "@/lib/headlines";
 import type { AnalyzedHeadline } from "@strata/shared";
 
+// The homepage reads yesterday's freshly-analyzed headlines from the DB, so it
+// must render per-request. Without this, Next.js prerenders it as static HTML
+// at build time (when the DB is empty) and never reflects new analysis.
+export const dynamic = "force-dynamic";
+
 async function getHeadlines(date: string): Promise<AnalyzedHeadline[]> {
   const rows = await prisma.headline.findMany({
     where: { forDate: date },
