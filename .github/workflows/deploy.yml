@@ -1,9 +1,15 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - main
+  # NOTE: Auto-deploy on push is disabled until the DigitalOcean droplet is
+  # provisioned. Every push since setup has failed at the SSH step (no server
+  # to connect to). Re-enable the `push` trigger below once the droplet +
+  # DO_SSH_* secrets are live. Until then, deploy can be run manually.
+  #
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
 
 jobs:
   deploy:
