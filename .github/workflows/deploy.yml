@@ -26,8 +26,8 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            echo "Installing dependencies..."
-            npm install --workspace=apps/web --workspace=packages/shared
+            echo "Installing dependencies (clean, deterministic)..."
+            npm ci
 
             echo "Generating Prisma client..."
             cd apps/web && npx prisma generate && cd ../..
