@@ -1,7 +1,8 @@
 import { HeadlineList } from "./components/HeadlineList";
 import { prisma } from "@/lib/prisma";
 import { yesterday } from "@/lib/dates";
-import type { AnalyzedHeadline, DeviationLevel } from "@strata/shared";
+import { mapRowToHeadline } from "@/lib/headlines";
+import type { AnalyzedHeadline } from "@strata/shared";
 
 async function getHeadlines(date: string): Promise<AnalyzedHeadline[]> {
   const rows = await prisma.headline.findMany({
@@ -9,23 +10,7 @@ async function getHeadlines(date: string): Promise<AnalyzedHeadline[]> {
     orderBy: { analyzedAt: "asc" },
   });
 
-  return rows.map((r) => ({
-    id: r.id,
-    headline: r.headline,
-    source: r.source,
-    url: r.url,
-    publishedAt: r.publishedAt,
-    category: r.category,
-    recentHistory: { score: r.recentScore as DeviationLevel, summary: r.recentSummary, detail: r.recentDetail },
-    broadHistory: { score: r.broadScore as DeviationLevel, summary: r.broadSummary, detail: r.broadDetail },
-    humanNature: { score: r.humanScore as DeviationLevel, summary: r.humanSummary, detail: r.humanDetail },
-    isPolitical: r.isPolitical,
-    politicianName: r.politicianName,
-    partyName: r.partyName,
-    campaignRhetoric: r.campaignScore ? { score: r.campaignScore as DeviationLevel, summary: r.campaignSummary!, detail: r.campaignDetail! } : null,
-    partyValues: r.partyScore ? { score: r.partyScore as DeviationLevel, summary: r.partySummary!, detail: r.partyDetail! } : null,
-    analyzedAt: r.analyzedAt.toISOString(),
-  }));
+  return rows.map(mapRowToHeadline);
 }
 
 export default async function Home() {

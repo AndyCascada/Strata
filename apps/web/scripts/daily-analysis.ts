@@ -1,4 +1,5 @@
 import { runDailyAnalysis } from "../lib/analyze";
+import { yesterday } from "../lib/dates";
 
 const date = process.argv[2] ?? yesterday();
 
@@ -13,9 +14,3 @@ runDailyAnalysis(date)
     console.error("Analysis failed:", err);
     process.exit(1);
   });
-
-function yesterday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
-}

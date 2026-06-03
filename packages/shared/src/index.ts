@@ -1,4 +1,11 @@
-export type DeviationLevel = "Within Norms" | "Unusual" | "Historical Outlier" | "Unprecedented";
+export const DEVIATION_ORDER = [
+  "Within Norms",
+  "Unusual",
+  "Historical Outlier",
+  "Unprecedented",
+] as const;
+
+export type DeviationLevel = (typeof DEVIATION_ORDER)[number];
 
 export interface ContextLayer {
   score: DeviationLevel;
@@ -23,13 +30,6 @@ export interface AnalyzedHeadline {
   partyValues: ContextLayer | null;
   analyzedAt: string;
 }
-
-export const DEVIATION_ORDER: DeviationLevel[] = [
-  "Within Norms",
-  "Unusual",
-  "Historical Outlier",
-  "Unprecedented",
-];
 
 export function deviationColor(level: DeviationLevel): string {
   switch (level) {

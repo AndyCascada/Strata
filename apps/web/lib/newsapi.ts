@@ -5,7 +5,6 @@ interface NewsAPIArticle {
   url: string;
   publishedAt: string;
   source: { name: string };
-  description: string | null;
 }
 
 interface NewsAPIResponse {
@@ -36,7 +35,7 @@ export async function fetchTopHeadlines(date: string): Promise<NewsAPIArticle[]>
     throw new Error("NewsAPI returned non-ok status");
   }
 
-  return response.data.articles
-    .filter((a) => a.title && a.title !== "[Removed]" && a.url)
-    .slice(0, 20);
+  return response.data.articles.filter(
+    (a) => a.title && a.title !== "[Removed]" && a.url
+  );
 }

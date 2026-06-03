@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ContextLayer } from "@strata/shared";
+import { DEVIATION_ORDER, type ContextLayer } from "@strata/shared";
 
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -7,7 +7,9 @@ function getClient(): Anthropic {
   return _client;
 }
 
-export const DEVIATION_LEVELS = ["Within Norms", "Unusual", "Historical Outlier", "Unprecedented"] as const;
+// Single source of truth lives in @strata/shared; re-exported here for the
+// analysis pipeline and its tests.
+export const DEVIATION_LEVELS = DEVIATION_ORDER;
 
 export interface AnalysisResult {
   recentHistory: ContextLayer;
@@ -22,7 +24,7 @@ export interface AnalysisResult {
 
 function validateLayer(layer: unknown, name: string): ContextLayer {
   const l = layer as ContextLayer;
-  if (!DEVIATION_LEVELS.includes(l.score as never)) {
+  if (!DEVIATION_LEVELS.includes(l.score)) {
     throw new Error(`Invalid deviation level in ${name}: ${l.score}`);
   }
   return l;
@@ -110,6 +112,7 @@ Be honest and specific. Cite actual examples where possible.`,
     ],
   });
 
-  const text = message.content[0].type === "text" ? message.content[0].text : "";
+  const block = message.content[0];
+  const text = block?.type === "text" ? block.text : "";
   return parseAnalysisResponse(text);
 }
