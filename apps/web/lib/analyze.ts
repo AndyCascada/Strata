@@ -20,6 +20,7 @@ export async function runDailyAnalysis(date: string): Promise<number> {
           url: article.url,
           publishedAt: article.publishedAt,
           forDate: date,
+          category: analysis.category,
           recentScore: analysis.recentHistory.score,
           recentSummary: analysis.recentHistory.summary,
           recentDetail: analysis.recentHistory.detail,
@@ -38,6 +39,9 @@ export async function runDailyAnalysis(date: string): Promise<number> {
           partyScore: analysis.partyValues?.score ?? null,
           partySummary: analysis.partyValues?.summary ?? null,
           partyDetail: analysis.partyValues?.detail ?? null,
+          techScore: analysis.techPrecedent?.score ?? null,
+          techSummary: analysis.techPrecedent?.summary ?? null,
+          techDetail: analysis.techPrecedent?.detail ?? null,
         },
       });
 

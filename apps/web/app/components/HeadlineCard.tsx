@@ -23,7 +23,11 @@ export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
       ]
     : [];
 
-  const allBadgeLayers = [...standardLayers, ...politicalLayers];
+  const techLayers = headline.techPrecedent
+    ? [{ key: "techPrecedent", label: "Tech Precedent", data: headline.techPrecedent }]
+    : [];
+
+  const allBadgeLayers = [...standardLayers, ...politicalLayers, ...techLayers];
 
   return (
     <article className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
@@ -32,7 +36,10 @@ export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
         className="w-full text-left px-5 py-4 flex items-start gap-4 hover:bg-zinc-800/50 transition-colors"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-zinc-400 mb-1">{headline.source}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-sm text-zinc-400">{headline.source}</p>
+            <CategoryBadge category={headline.category} />
+          </div>
           <h2 className="text-base font-medium leading-snug text-zinc-100">
             {headline.headline}
           </h2>
@@ -70,6 +77,19 @@ export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
             </>
           )}
 
+          {techLayers.length > 0 && (
+            <>
+              <div className="px-5 pt-4 pb-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
+                  Technology Context
+                </p>
+              </div>
+              {techLayers.map((l) => (
+                <ContextSection key={l.key} label={l.label} layer={l.data} />
+              ))}
+            </>
+          )}
+
           <div className="px-5 py-3">
             <a
               href={headline.url}
@@ -83,6 +103,29 @@ export function HeadlineCard({ headline, isExpanded, onToggle }: Props) {
         </div>
       )}
     </article>
+  );
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Politics:   "#818cf8",
+  Technology: "#22d3ee",
+  Science:    "#34d399",
+  Economy:    "#fbbf24",
+  World:      "#60a5fa",
+  Climate:    "#4ade80",
+  Health:     "#f472b6",
+  General:    "#94a3b8",
+};
+
+function CategoryBadge({ category }: { category: string }) {
+  const color = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.General;
+  return (
+    <span
+      className="text-xs px-2 py-0.5 rounded-full font-medium"
+      style={{ color, backgroundColor: color + "20" }}
+    >
+      {category}
+    </span>
   );
 }
 

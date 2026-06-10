@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { DEVIATION_ORDER, type ContextLayer } from "@strata/shared";
+import { DEVIATION_ORDER, HEADLINE_CATEGORIES, type ContextLayer } from "@strata/shared";
 
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -7,11 +7,10 @@ function getClient(): Anthropic {
   return _client;
 }
 
-// Single source of truth lives in @strata/shared; re-exported here for the
-// analysis pipeline and its tests.
 export const DEVIATION_LEVELS = DEVIATION_ORDER;
 
 export interface AnalysisResult {
+  category: string;
   recentHistory: ContextLayer;
   broadHistory: ContextLayer;
   humanNature: ContextLayer;
@@ -20,6 +19,7 @@ export interface AnalysisResult {
   partyName: string | null;
   campaignRhetoric: ContextLayer | null;
   partyValues: ContextLayer | null;
+  techPrecedent: ContextLayer | null;
 }
 
 function validateLayer(layer: unknown, name: string): ContextLayer {
@@ -36,7 +36,11 @@ export function parseAnalysisResponse(text: string): AnalysisResult {
 
   const raw = JSON.parse(jsonMatch[0]) as AnalysisResult;
 
+  const validCategories = HEADLINE_CATEGORIES as readonly string[];
+  const category = validCategories.includes(raw.category) ? raw.category : "General";
+
   const result: AnalysisResult = {
+    category,
     recentHistory: validateLayer(raw.recentHistory, "recentHistory"),
     broadHistory: validateLayer(raw.broadHistory, "broadHistory"),
     humanNature: validateLayer(raw.humanNature, "humanNature"),
@@ -45,10 +49,15 @@ export function parseAnalysisResponse(text: string): AnalysisResult {
     partyName: raw.partyName ?? null,
     campaignRhetoric: raw.campaignRhetoric ? validateLayer(raw.campaignRhetoric, "campaignRhetoric") : null,
     partyValues: raw.partyValues ? validateLayer(raw.partyValues, "partyValues") : null,
+    techPrecedent: raw.techPrecedent ? validateLayer(raw.techPrecedent, "techPrecedent") : null,
   };
 
   if (result.isPolitical && (!result.campaignRhetoric || !result.partyValues)) {
     throw new Error("Political headline missing campaignRhetoric or partyValues layers");
+  }
+
+  if (category === "Technology" && !result.techPrecedent) {
+    throw new Error("Technology headline missing techPrecedent layer");
   }
 
   return result;
@@ -57,7 +66,7 @@ export function parseAnalysisResponse(text: string): AnalysisResult {
 export async function analyzeHeadline(headline: string): Promise<AnalysisResult> {
   const message = await getClient().messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1536,
+    max_tokens: 1800,
     system: `You are a rigorous historian, political scientist, and social scientist. You analyze news headlines and provide honest, evidence-based context. You are not partisan — your job is to compare events against historical precedent and stated positions, not to editorialize. You always respond with valid JSON.`,
     messages: [
       {
@@ -66,11 +75,16 @@ export async function analyzeHeadline(headline: string): Promise<AnalysisResult>
 
 Headline: "${headline.replace(/"/g, '\\"')}"
 
-First, determine if this headline is about a specific US politician or political party taking an action or making a statement.
+Step 1 — Assign a category. Choose exactly one from: Politics, Technology, Science, Economy, World, Climate, Health, General.
+
+Step 2 — Determine if the headline is about a specific US politician or political party taking an action or making a statement (isPolitical).
+
+Step 3 — Score each layer using the scoring guide below. Apply the category-specific guidance where relevant.
 
 Return this exact JSON structure:
 
 {
+  "category": "<Politics | Technology | Science | Economy | World | Climate | Health | General>",
   "recentHistory": {
     "score": "<Within Norms | Unusual | Historical Outlier | Unprecedented>",
     "summary": "<one sentence: how does this compare to events of the last 20-30 years?>",
@@ -87,8 +101,8 @@ Return this exact JSON structure:
     "detail": "<2-3 sentences connecting to broader patterns of human psychology, sociology, or political behavior>"
   },
   "isPolitical": <true if this involves a specific US politician or political party acting or speaking, otherwise false>,
-  "politicianName": "<full name of the primary politician, or null if not applicable>",
-  "partyName": "<political party name, or null if not applicable>",
+  "politicianName": "<full name of the primary politician, or null>",
+  "partyName": "<political party name, or null>",
   "campaignRhetoric": <null if isPolitical is false, otherwise: {
     "score": "<Within Norms | Unusual | Historical Outlier | Unprecedented>",
     "summary": "<one sentence: how consistent is this with what the politician said they would do during their campaign?>",
@@ -98,14 +112,31 @@ Return this exact JSON structure:
     "score": "<Within Norms | Unusual | Historical Outlier | Unprecedented>",
     "summary": "<one sentence: how consistent is this with the stated platform and values of their party?>",
     "detail": "<2-3 sentences citing the party's official platform, historical positions, or stated principles>"
+  }>,
+  "techPrecedent": <null if category is not Technology, otherwise: {
+    "score": "<Within Norms | Unusual | Historical Outlier | Unprecedented>",
+    "summary": "<one sentence: how significant is this advance relative to the pace and trajectory of technological change?>",
+    "detail": "<2-3 sentences assessing whether this represents an incremental step, a meaningful leap, or a paradigm shift — cite comparable technological milestones>"
   }>
 }
 
-Scoring guide for all layers:
-- "Within Norms": Consistent with established patterns or stated positions
-- "Unusual": Somewhat inconsistent or uncommon, but not without precedent
-- "Historical Outlier": A significant departure from the norm or stated positions
-- "Unprecedented": No meaningful parallel or a direct contradiction of stated positions
+---
+
+SCORING GUIDE — applies to all layers:
+- "Within Norms": Consistent with well-established patterns. Expected given recent trends.
+- "Unusual": Somewhat inconsistent or uncommon, but not without precedent.
+- "Historical Outlier": A significant departure from the norm — notable and relatively rare.
+- "Unprecedented": No meaningful parallel in recorded history, or a direct contradiction of stated positions.
+
+CATEGORY-SPECIFIC GUIDANCE:
+
+Technology headlines — the bar for "Within Norms" is high. A new AI model, product launch, or tech acquisition is NOT automatically within norms just because similar things have occurred before. Ask: does this accelerate the pace of change, concentrate power in new ways, or displace human capability in a meaningfully new domain? If yes, score higher. Reserve "Within Norms" for genuinely incremental, expected updates with no structural implications.
+
+Politics headlines — score against democratic norms, institutional precedent, and separation of powers, not just partisan expectation.
+
+Economy headlines — consider systemic risk, inequality implications, and historical analogues to past financial cycles.
+
+Climate headlines — score against scientific consensus trajectories and the historical pace of environmental change.
 
 Be honest and specific. Cite actual examples where possible.`,
       },

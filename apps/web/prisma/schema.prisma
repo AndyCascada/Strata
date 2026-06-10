@@ -39,6 +39,10 @@ model Headline {
   partySummary  String?
   partyDetail   String?
 
+  techScore    String?
+  techSummary  String?
+  techDetail   String?
+
   analyzedAt   DateTime @default(now())
   forDate      String
 

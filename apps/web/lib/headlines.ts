@@ -1,5 +1,6 @@
 import type { Headline } from "@/app/generated/prisma/client";
-import type { AnalyzedHeadline, DeviationLevel } from "@strata/shared";
+import type { AnalyzedHeadline, DeviationLevel, HeadlineCategory } from "@strata/shared";
+import { HEADLINE_CATEGORIES } from "@strata/shared";
 
 /**
  * Maps a persisted Headline row to the AnalyzedHeadline shape shared by the
@@ -13,7 +14,9 @@ export function mapRowToHeadline(r: Headline): AnalyzedHeadline {
     source: r.source,
     url: r.url,
     publishedAt: r.publishedAt,
-    category: r.category,
+    category: (HEADLINE_CATEGORIES as readonly string[]).includes(r.category)
+      ? r.category as HeadlineCategory
+      : "General",
     recentHistory: { score: r.recentScore as DeviationLevel, summary: r.recentSummary, detail: r.recentDetail },
     broadHistory: { score: r.broadScore as DeviationLevel, summary: r.broadSummary, detail: r.broadDetail },
     humanNature: { score: r.humanScore as DeviationLevel, summary: r.humanSummary, detail: r.humanDetail },
@@ -25,6 +28,9 @@ export function mapRowToHeadline(r: Headline): AnalyzedHeadline {
       : null,
     partyValues: r.partyScore
       ? { score: r.partyScore as DeviationLevel, summary: r.partySummary!, detail: r.partyDetail! }
+      : null,
+    techPrecedent: r.techScore
+      ? { score: r.techScore as DeviationLevel, summary: r.techSummary!, detail: r.techDetail! }
       : null,
     analyzedAt: r.analyzedAt.toISOString(),
   };
