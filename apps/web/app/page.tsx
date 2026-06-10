@@ -35,7 +35,7 @@ export default async function Home() {
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold tracking-tight">Strata</h1>
           <p className="text-zinc-400 text-sm mt-1">
-            {formatted} · News in historical context
+            Headlines from {formatted} · News in historical context
           </p>
         </div>
       </header>
